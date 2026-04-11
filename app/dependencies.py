@@ -1,4 +1,7 @@
+from typing import cast
+
 from flask import current_app
+from sqlalchemy.orm import Session
 
 from app.auth.auth_service import AuthService
 from app.auth.oauth import GitHubOAuthProvider, GoogleOAuthProvider, OAuthProvider
@@ -13,12 +16,12 @@ from app.users.user_service import UserService
 
 
 def get_user_service(session=None) -> UserService:
-    session = session or db.session
+    session = cast(Session, session or db.session)
     return UserService(user_repo=UserRepository(session))
 
 
 def get_thread_service(session=None) -> ThreadService:
-    session = session or db.session
+    session = cast(Session, session or db.session)
     return ThreadService(
         thread_repo=ThreadRepository(session),
         session=session,
@@ -26,7 +29,7 @@ def get_thread_service(session=None) -> ThreadService:
 
 
 def get_message_service(session=None) -> MessageService:
-    session = session or db.session
+    session = cast(Session, session or db.session)
     return MessageService(
         message_repo=MessageRepository(session),
         thread_repo=ThreadRepository(session),
@@ -52,7 +55,7 @@ def get_oauth_provider(provider_name: str) -> OAuthProvider:
 
 
 def get_auth_service(provider: OAuthProvider, session=None) -> AuthService:
-    session = session or db.session
+    session = cast(Session, session or db.session)
     return AuthService(
         provider=provider,
         user_repo=UserRepository(session),

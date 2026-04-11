@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.jwt import encode_token
 from app.auth.oauth import OAuthProvider
+from app.exceptions import UserNotFoundError
 from app.users.user_model import User
 from app.users.user_oauth_account_model import UserOAuthAccount
 from app.users.user_oauth_account_repository import UserOAuthAccountRepository
@@ -31,6 +32,8 @@ class AuthService:
         )
         if existing_account:
             user = self.user_repo.find_by_id(existing_account.user_id)
+            if user is None:
+                raise UserNotFoundError(existing_account.user_id)
             token = encode_token(user.id, self.jwt_secret)
             return token, user
 

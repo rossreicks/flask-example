@@ -62,6 +62,7 @@ def test_login_links_new_oauth_account_to_existing_user(db_session):
     oauth_repo = UserOAuthAccountRepository(db_session)
     user_repo = UserRepository(db_session)
     user = user_repo.find_by_email("oauth@example.com")
+    assert user is not None
     accounts = oauth_repo.find_by_user_id(user.id)
     assert len(accounts) == 2
     providers = {a.provider for a in accounts}
@@ -76,5 +77,6 @@ def test_login_does_not_duplicate_oauth_account(db_session):
     oauth_repo = UserOAuthAccountRepository(db_session)
     user_repo = UserRepository(db_session)
     user = user_repo.find_by_email("oauth@example.com")
+    assert user is not None
     accounts = oauth_repo.find_by_user_id(user.id)
     assert len(accounts) == 1
