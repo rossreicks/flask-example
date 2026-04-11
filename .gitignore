@@ -1,7 +1,13 @@
 .idea/
 .vscode/
 __pycache__/
+*.py[cod]
+.venv/
+.env
+*.egg-info/
 dist/
+.pytest_cache/
+.ruff_cache/
 .coverage*
 htmlcov/
 .tox/
