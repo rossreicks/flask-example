@@ -5,11 +5,18 @@ from app.extensions import db, migrate, socketio
 
 
 def create_app(config=None):
-    app = Flask(__name__)
-    app.config.from_object(config or DevConfig)
+    flask_app = Flask(__name__)
+    flask_app.config.from_object(config or DevConfig)
 
-    db.init_app(app)
-    migrate.init_app(app, db)
-    socketio.init_app(app, cors_allowed_origins="*")
+    db.init_app(flask_app)
+    migrate.init_app(flask_app, db)
+    socketio.init_app(flask_app, cors_allowed_origins="*")
 
-    return app
+    with flask_app.app_context():
+        import app.messages.message_model  # noqa: F401
+        import app.threads.thread_member_model  # noqa: F401
+        import app.threads.thread_model  # noqa: F401
+        import app.users.user_model  # noqa: F401
+        import app.users.user_oauth_account_model  # noqa: F401
+
+    return flask_app
