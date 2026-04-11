@@ -23,4 +23,4 @@ class UserOAuthAccount(db.Model):
     provider_id: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 
-    user: Mapped[User] = relationship(back_populates="oauth_accounts")
+    user: Mapped["User"] = relationship("User", back_populates="oauth_accounts")  # noqa: UP037

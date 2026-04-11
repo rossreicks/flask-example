@@ -22,4 +22,6 @@ class User(db.Model):
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 
-    oauth_accounts: Mapped[list[UserOAuthAccount]] = relationship(back_populates="user")
+    oauth_accounts: Mapped[list["UserOAuthAccount"]] = relationship(  # noqa: UP037
+        "UserOAuthAccount", back_populates="user"
+    )
