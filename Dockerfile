@@ -16,4 +16,4 @@ COPY --from=deps /app/.venv /app/.venv
 COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 5000
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "--factory", "app:create_app"]
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "wsgi:app"]

@@ -18,7 +18,11 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
+      # Host 5001 avoids macOS AirPlay / other services binding :5000
+      - "${APP_PORT:-5001}:5000"
+    command: >
+      sh -c "flask --app wsgi:app db upgrade &&
+      exec gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:5000 wsgi:app"
     environment:
       DATABASE_URL: postgresql://chat:chat@postgres:5432/chat
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
