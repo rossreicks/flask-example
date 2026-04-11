@@ -1,0 +1,42 @@
+[project]
+name = "flask-example"
+version = "0.1.0"
+description = "A testable Flask chat application demonstrating clean architecture"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1",
+    "flask-socketio>=5.4",
+    "flask-sqlalchemy>=3.1",
+    "flask-migrate>=4.0",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "pyjwt>=2.9",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "gunicorn>=23.0",
+    "eventlet>=0.37",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "testcontainers[postgres]>=4.9",
+    "ruff>=0.9",
+    "ty>=0.0.1a7",
+]
+
+[tool.pytest.ini_options]
+python_files = "*_test.py"
+python_functions = "test_*"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "T20", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
