@@ -19,4 +19,16 @@ def create_app(config=None):
         import app.users.user_model  # noqa: F401
         import app.users.user_oauth_account_model  # noqa: F401
 
+    from app.auth.auth_routes import auth_bp
+    from app.messages.message_routes import messages_bp
+    from app.threads.thread_routes import threads_bp
+    from app.users.user_routes import users_bp
+
+    flask_app.register_blueprint(auth_bp)
+    flask_app.register_blueprint(threads_bp)
+    flask_app.register_blueprint(messages_bp)
+    flask_app.register_blueprint(users_bp)
+
+    import app.messages.message_events  # noqa: F401, E402
+
     return flask_app
