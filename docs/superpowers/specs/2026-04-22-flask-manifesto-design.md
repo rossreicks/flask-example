@@ -83,16 +83,22 @@ def create_message(thread_id):
 
 **Better:**
 ```python
-@app.route("/threads/<thread_id>/messages", methods=["POST"])
+# The handler owns HTTP concerns. The service owns decisions.
+@bp.route("/threads/<thread_id>/messages", methods=["POST"])
 @require_auth
 def create_message(thread_id):
     data = request.json
     service = get_message_service()
-    message = service.create_message(
-        thread_id=thread_id,
-        user_id=g.current_user.id,
-        body=data["body"],
-    )
+    try:
+        message = service.create_message(
+            thread_id=thread_id,
+            user_id=g.current_user.id,
+            body=data["body"],
+        )
+    except ThreadNotFound:
+        return jsonify({"error": "not found"}), 404
+    except NotThreadMember:
+        return jsonify({"error": "forbidden"}), 403
     return jsonify(message.to_dict()), 201
 ```
 
@@ -131,60 +137,62 @@ class MessageRepository:
 
 ### 3. Control over your dependencies is control over your tests
 
-**Why:** When a service constructs its own dependencies internally, you cannot swap them in tests. When dependencies are injected — passed in via factory functions — you can hand a service a fake repository, a fake OAuth provider, or a fake email sender, and test it in complete isolation without touching a database or hitting an external API.
+**Why:** When a service calls `datetime.now()` directly, you cannot write a deterministic test for expiry logic — the answer changes every second. When the clock is injected, you hand the test a fixed point in time and the behavior becomes predictable. This principle applies to anything external: time, randomness, email, HTTP. If you can inject it, you can control it.
 
 **Anti-pattern:**
 ```python
-class AuthService:
-    def __init__(self):
-        self.user_repo = UserRepository(db.session)  # hardwired — untestable
-        self.oauth = GoogleOAuthProvider()            # hardwired — untestable
+# Time is hardwired — you cannot control it in tests
+class TokenService:
+    def is_expired(self, token: Token) -> bool:
+        return token.expires_at < datetime.now()
 ```
 
 **Better:**
 ```python
-class AuthService:
-    def __init__(self, user_repo: UserRepository, oauth: OAuthProvider) -> None:
-        self.user_repo = user_repo
-        self.oauth = oauth
+# Clock is injected — tests own time exactly
+from collections.abc import Callable
+
+class TokenService:
+    def __init__(self, clock: Callable[[], datetime] = datetime.now) -> None:
+        self.clock = clock
+
+    def is_expired(self, token: Token) -> bool:
+        return token.expires_at < self.clock()
 
 # In tests:
-service = AuthService(user_repo=FakeUserRepository(), oauth=FakeOAuthProvider())
+fixed_time = datetime(2026, 6, 1, 12, 0, 0)
+service = TokenService(clock=lambda: fixed_time)
 
-# In production (app/dependencies.py):
-def get_auth_service() -> AuthService:
-    return AuthService(
-        user_repo=UserRepository(db.session),
-        oauth=GoogleOAuthProvider(),
-    )
+token = Token(expires_at=fixed_time - timedelta(seconds=1))
+assert service.is_expired(token) is True
 ```
 
 ---
 
 ### 4. The measure of a test suite is the confidence it instills, not the lines it covers
 
-**Why:** A test suite with 100% coverage built on mocked databases and patched HTTP calls tells you nothing about whether your application will behave correctly in production. Coverage is a proxy metric. The real question is: if this test passes, are you genuinely confident the feature works? Tests built against real databases, real migrations, and real network flows earn that confidence.
+**Why:** A line of code being executed in a test is not the same as that line being verified. Coverage tools count executions, not assertions. A test that calls a function and checks that it returns "something" covers the line — and proves nothing. Confidence comes from asserting the right thing, not from making the test runner go green.
 
 **Anti-pattern:**
 ```python
-# 100% coverage — but SQLite behaves differently from PostgreSQL,
-# and this schema will fail a Postgres-specific constraint at runtime
-@pytest.fixture
-def db():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    yield Session(engine)
+# 100% coverage — and zero confidence
+def test_create_message():
+    repo = FakeMessageRepository()
+    service = MessageService(message_repo=repo, thread_repo=FakeThreadRepository())
+    result = service.create_message(thread_id="t1", user_id="u1", body="hello")
+    assert result is not None  # line executed, coverage satisfied, nothing verified
 ```
 
 **Better:**
 ```python
-# Real Postgres via testcontainers — same engine as production
-@pytest.fixture(scope="session")
-def db_engine():
-    with PostgresContainer("postgres:16") as pg:
-        engine = create_engine(pg.get_connection_url())
-        run_migrations(engine)
-        yield engine
+# Asserts the things that actually matter
+def test_create_message():
+    repo = FakeMessageRepository()
+    service = MessageService(message_repo=repo, thread_repo=FakeThreadRepository())
+    message = service.create_message(thread_id="t1", user_id="u1", body="hello")
+    assert message.body == "hello"
+    assert message.thread_id == "t1"
+    assert repo.saved[-1] is message  # proves it was actually persisted
 ```
 
 ---
@@ -239,12 +247,18 @@ def create_message(thread_id, data: MessageSchema, service: MessageService):
 def create_message(thread_id):
     data = request.json
     service = get_message_service()
-    message = service.create_message(
-        thread_id=thread_id,
-        user_id=g.current_user.id,
-        body=data["body"],
-    )
+    try:
+        message = service.create_message(
+            thread_id=thread_id,
+            user_id=g.current_user.id,
+            body=data["body"],
+        )
+    except ThreadNotFound:
+        return jsonify({"error": "not found"}), 404
+    except NotThreadMember:
+        return jsonify({"error": "forbidden"}), 403
     return jsonify(message.to_dict()), 201
+# Every dependency call is visible. No framework knowledge required to read this.
 ```
 
 ## Deployment
