@@ -35,8 +35,11 @@ Two-column split, single HTML file with embedded CSS and JS. No build step requi
 - Fixed position so the full manifesto is always visible while reading breakdowns
 
 ### Right Column (scrollable)
-One section per principle containing:
-- The full "We believe" statement as a large `<h2>` heading
+A sticky two-line header sits at the top of the right column:
+- Line 1: **"We believe"** — static, always visible, same size and weight
+- Line 2: *the rest of the active statement* — updates dynamically as the user scrolls between sections, driven by the same intersection observer that highlights the sidebar
+
+This prevents layout jank from varying statement lengths and gives the page a consistent visual anchor while reading. Below the sticky header, each section contains:
 - **Why** — 2–4 sentences explaining the conviction and what goes wrong when ignored
 - **What it unlocks** — a before/after code block showing the anti-pattern vs. the better approach
 
