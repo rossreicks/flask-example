@@ -288,11 +288,11 @@
       >
         <p class="principle-why-label">Why</p>
         <p class="principle-why">
-          When a route handler validates input, calls a service, <em>and</em> makes business
-          decisions, it becomes impossible to test the business logic in isolation. It also
-          becomes impossible to add a second entry point &mdash; a WebSocket handler, a CLI command,
-          a background job &mdash; that shares the same logic. Entry points are transport.
-          They should hand off immediately.
+          A handler that fetches data, checks permissions, and commits a transaction isn't
+          directing traffic &mdash; it's conducting business. When that logic lives in the route,
+          you can't test it without an HTTP request, and you can't reuse it from a WebSocket
+          handler or a background job. The entry point's job is simple: take a request, call
+          the right service, return a response.
         </p>
         <div class="code-pair">
           <div class="code-block anti">
